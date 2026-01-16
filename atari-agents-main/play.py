@@ -6,6 +6,7 @@ import random
 import cv2
 import numpy as np
 import torch
+from numpy.testing.print_coercion_tables import print_new_cast_table
 from torch import nn
 import torchvision
 import torchvision.transforms.v2 as trans
@@ -79,7 +80,7 @@ def motion_blur(prev_obs, obs):
     # Motion blur, higher alpha = more blur
     prev_obs = prev_obs.numpy()
     obs = obs.numpy()
-    alpha = 0.7
+    alpha = 0.8
     beta = (1.0 - alpha)
     blurred = cv2.addWeighted(prev_obs, alpha, obs, beta, 0.0)
     blurred = torch.tensor(blurred)
@@ -168,38 +169,45 @@ def main(opt):
     # Generating an angle for rain to fall at
     slant_extreme = 2
     slant = np.random.randint(-slant_extreme, slant_extreme)
-    slant = -2
-
-    print(slant)
+    # slant = -2
 
     for ep in range(opt.episodes):
         obs, done = env.reset(), False
-        prev_obs = obs
+        frames = []
+        actions = []
         while not done:
-
             action, _ = policy(obs)
-            print(action)
-            # Uncode line below for non-frozen normal functioning
-            # prev_obs = obs
+            frames.append(obs[0][0])
+            actions.append(action)
+
+            # Uncomment line below for non-frozen normal functioning
+            prev_obs = obs
 
             obs, reward, done, _ = env.step(action)
+
             # Code for frozen frames
-            if random.randint(0, 2) != 0:
-                obs = prev_obs
-            else:
-                prev_obs = obs
+            # if random.randint(0, 2) != 0:
+            #     obs = prev_obs
+            # else:
+            #     prev_obs = obs
 
             # obs = motion_blur(prev_obs, obs)
-            obs = gaussian_blur(obs)
+            # obs = gaussian_blur(obs)
             # obs = gaussian_noise(obs)
             # obs = random_erase(obs)
             # obs = pixelate(obs, (42, 42))
-            # obs = earthquake(obs, 5)
+            # obs = earthquake(obs, 50)
             # obs = add_rain(obs, slant)
 
+            # TODO: fix upscaling so it shows exactly what the agent sees (no upscaling or blurring)
             cv2.imshow("yo", cv2.resize(obs.numpy()[0][0], [420, 420], interpolation=cv2.INTER_LINEAR))
             ep_returns[ep] += reward
         print(f"{ep:02d})  Gt: {ep_returns[ep]:7.1f}")
+
+        frames_tensor = torch.stack(frames, dim=0)
+        actions_tensor = torch.tensor(actions)
+        torch.save(frames_tensor, f'recordings/episode{ep}_frames.pt')
+        torch.save(actions_tensor, f'recordings/episode{ep}_actions.pt')
 
 
 
