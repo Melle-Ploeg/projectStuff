@@ -175,17 +175,19 @@ def main(opt):
         obs, done = env.reset(), False
         frames = []
         actions = []
+        rewards = []
         while not done:
             action, _ = policy(obs)
             frames.append(obs[0][0])
             actions.append(action)
+            rewards.append(ep_returns[ep])
 
             # Uncomment line below for non-frozen normal functioning
             prev_obs = obs
 
             obs, reward, done, _ = env.step(action)
 
-            # Code for frozen frames
+            # Code for frozen frames    # TODO: extract to method
             # if random.randint(0, 2) != 0:
             #     obs = prev_obs
             # else:
@@ -206,8 +208,11 @@ def main(opt):
 
         frames_tensor = torch.stack(frames, dim=0)
         actions_tensor = torch.tensor(actions)
+        rewards_tensor = torch.tensor(rewards)
         torch.save(frames_tensor, f'recordings/episode{ep}_frames.pt')
         torch.save(actions_tensor, f'recordings/episode{ep}_actions.pt')
+        torch.save(rewards_tensor, f'recordings/episode{ep}_rewards.pt')
+
 
 
 
